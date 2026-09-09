@@ -51,7 +51,7 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
   const fontHelvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontHelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontHelveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  
+
   const fontTimesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const fontTimesBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
   const fontTimesItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
@@ -86,6 +86,8 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
 
   // Helper to draw dynamic text based on FieldConfig
   const drawFieldText = (text: string, config: FieldConfig) => {
+    if (config.enabled === false) return; // Skip drawing if disabled
+
     const font = getFontByName(config.fontFamily);
     const textWidth = font.widthOfTextAtSize(text, config.fontSize);
 
@@ -101,7 +103,7 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
       y: config.y,
       size: config.fontSize,
       font,
-      color: parseHexColor(config.color),
+      color: parseHexColor(config.color || '#10172a'),
     });
   };
 
@@ -121,29 +123,31 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
   }
 
   // 7. Overlay QR Code (points to verification page)
-  if (templateConfig.fields.qrCode?.enabled && verifyBaseUrl && certificateId) {
+  if (templateConfig.fields.qrCode?.enabled !== false && verifyBaseUrl && certificateId) {
     try {
       const qrConfig = templateConfig.fields.qrCode;
-      const verifyUrl = `${verifyBaseUrl}/verify/${certificateId}`;
+      if (qrConfig && qrConfig.enabled !== false) {
+        const verifyUrl = `${verifyBaseUrl}/verify/${certificateId}`;
 
-      // Generate PNG data URL for QR Code
-      const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-        margin: 1,
-        color: {
-          dark: '#10172A',
-          light: '#FFFFFF',
-        },
-      });
+        // Generate PNG data URL for QR Code
+        const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+          margin: 1,
+          color: {
+            dark: '#10172A',
+            light: '#FFFFFF',
+          },
+        });
 
-      const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
-      const embeddedQrImage = await pdfDoc.embedPng(qrImageBytes);
+        const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+        const embeddedQrImage = await pdfDoc.embedPng(qrImageBytes);
 
-      page.drawImage(embeddedQrImage, {
-        x: qrConfig.x,
-        y: qrConfig.y,
-        width: qrConfig.size,
-        height: qrConfig.size,
-      });
+        page.drawImage(embeddedQrImage, {
+          x: qrConfig.x,
+          y: qrConfig.y,
+          width: qrConfig.size,
+          height: qrConfig.size,
+        });
+      }
     } catch (err) {
       console.error('Failed to embed QR code:', err);
     }

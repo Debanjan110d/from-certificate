@@ -14,6 +14,7 @@ export interface FieldConfig {
     | 'Courier';
   color: string; // Hex e.g. "#10172a"
   alignment: 'center' | 'left' | 'right';
+  enabled?: boolean; // Toggle field visibility on PDF
 }
 
 export interface QrCodeConfig {

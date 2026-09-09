@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sliders, Save, RefreshCw, Eye, Check, Layers, Type, Upload, FileUp, AlertCircle, FileCheck } from 'lucide-react';
+import { Sliders, Save, RefreshCw, Eye, Check, Layers, Type, Upload, FileUp, AlertCircle, FileCheck, Calendar, QrCode, Hash } from 'lucide-react';
 import { TemplateConfig } from '@/lib/types';
 
 export default function TemplateConfigurator() {
@@ -126,7 +126,8 @@ export default function TemplateConfigurator() {
   }
 
   const nameField = config.fields.name;
-  const dateField = config.fields.date || { x: 170, y: 140, fontSize: 11, fontFamily: 'Helvetica', color: '#334155', alignment: 'center' };
+  const dateField = config.fields.date || { x: 170, y: 140, fontSize: 11, fontFamily: 'Helvetica', color: '#334155', alignment: 'center', enabled: true };
+  const certIdField = config.fields.certificateId || { x: 770, y: 565, fontSize: 9, fontFamily: 'Courier', color: '#64748b', alignment: 'right', enabled: true };
   const qrField = config.fields.qrCode || { x: 685, y: 45, size: 70, enabled: true };
 
   const updateName = (key: string, value: any) => {
@@ -145,6 +146,16 @@ export default function TemplateConfigurator() {
       fields: {
         ...config.fields,
         date: { ...dateField, [key]: value },
+      },
+    });
+  };
+
+  const updateCertId = (key: string, value: any) => {
+    setConfig({
+      ...config,
+      fields: {
+        ...config.fields,
+        certificateId: { ...certIdField, [key]: value },
       },
     });
   };
@@ -170,7 +181,7 @@ export default function TemplateConfigurator() {
               Template PDF & Field Designer
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Upload custom background PDF templates and calibrate text positioning & fonts.
+              Upload custom background PDF templates and toggle/calibrate text positioning & fonts.
             </p>
           </div>
           <div className="flex gap-2">
@@ -252,7 +263,6 @@ export default function TemplateConfigurator() {
             <Type className="w-4 h-4" /> Student Name Font & Styling
           </h3>
 
-          {/* Font Family Selector */}
           <div className="space-y-1.5">
             <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
               Select Name Font Style
@@ -343,63 +353,131 @@ export default function TemplateConfigurator() {
           </div>
         </div>
 
-        {/* Date Coordinates Box */}
+        {/* Date Coordinates Box WITH Checkbox Toggle */}
         <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-xl">
-          <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-            <Layers className="w-4 h-4" /> Issue Date Placement
-          </h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">X Pos: {dateField.x}</label>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Issue Date Placement
+            </h3>
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer font-semibold bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
               <input
-                type="range"
-                min="50"
-                max="800"
-                value={dateField.x}
-                onChange={(e) => updateDate('x', Number(e.target.value))}
-                className="w-full accent-blue-500 cursor-pointer"
+                type="checkbox"
+                checked={dateField.enabled !== false}
+                onChange={(e) => updateDate('enabled', e.target.checked)}
+                className="rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Y Pos: {dateField.y}</label>
-              <input
-                type="range"
-                min="50"
-                max="550"
-                value={dateField.y}
-                onChange={(e) => updateDate('y', Number(e.target.value))}
-                className="w-full accent-blue-500 cursor-pointer"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Font Size ({dateField.fontSize}pt)</label>
-              <input
-                type="number"
-                value={dateField.fontSize}
-                onChange={(e) => updateDate('fontSize', Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
-              />
-            </div>
+              Show Issue Date on PDF
+            </label>
           </div>
+
+          {dateField.enabled !== false && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">X Pos: {dateField.x}</label>
+                <input
+                  type="range"
+                  min="50"
+                  max="800"
+                  value={dateField.x}
+                  onChange={(e) => updateDate('x', Number(e.target.value))}
+                  className="w-full accent-blue-500 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Y Pos: {dateField.y}</label>
+                <input
+                  type="range"
+                  min="50"
+                  max="550"
+                  value={dateField.y}
+                  onChange={(e) => updateDate('y', Number(e.target.value))}
+                  className="w-full accent-blue-500 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Font Size ({dateField.fontSize}pt)</label>
+                <input
+                  type="number"
+                  value={dateField.fontSize}
+                  onChange={(e) => updateDate('fontSize', Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* QR Code Settings */}
+        {/* Certificate ID Coordinates Box WITH Checkbox Toggle */}
+        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <Hash className="w-4 h-4" /> Certificate ID Placement
+            </h3>
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer font-semibold bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
+              <input
+                type="checkbox"
+                checked={certIdField.enabled !== false}
+                onChange={(e) => updateCertId('enabled', e.target.checked)}
+                className="rounded border-slate-700 bg-slate-950 text-purple-500 focus:ring-purple-500"
+              />
+              Show Certificate ID Text
+            </label>
+          </div>
+
+          {certIdField.enabled !== false && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">X Pos: {certIdField.x}</label>
+                <input
+                  type="range"
+                  min="50"
+                  max="800"
+                  value={certIdField.x}
+                  onChange={(e) => updateCertId('x', Number(e.target.value))}
+                  className="w-full accent-purple-500 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Y Pos: {certIdField.y}</label>
+                <input
+                  type="range"
+                  min="50"
+                  max="580"
+                  value={certIdField.y}
+                  onChange={(e) => updateCertId('y', Number(e.target.value))}
+                  className="w-full accent-purple-500 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Font Size ({certIdField.fontSize}pt)</label>
+                <input
+                  type="number"
+                  value={certIdField.fontSize}
+                  onChange={(e) => updateCertId('fontSize', Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* QR Code Settings WITH Checkbox Toggle */}
         <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4" /> QR Code Verification Overlay
+              <QrCode className="w-4 h-4" /> QR Code Verification Overlay
             </h3>
-            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer font-semibold bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
               <input
                 type="checkbox"
-                checked={qrField.enabled}
+                checked={qrField.enabled !== false}
                 onChange={(e) => updateQr('enabled', e.target.checked)}
-                className="rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-500"
+                className="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500"
               />
-              Enable QR Overlay
+              Show QR Code Overlay
             </label>
           </div>
-          {qrField.enabled && (
+          {qrField.enabled !== false && (
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-xs text-slate-400 block mb-1">X Pos: {qrField.x}</label>
