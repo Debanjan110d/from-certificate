@@ -5,7 +5,7 @@ import path from 'path';
 import { FieldConfig, TemplateConfig } from '../types';
 
 function parseHexColor(hex: string): RGB {
-  const cleanHex = hex.replace('#', '');
+  const cleanHex = (hex || '#10172a').replace('#', '');
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255 || 0;
   const g = parseInt(cleanHex.substring(2, 4), 16) / 255 || 0;
   const b = parseInt(cleanHex.substring(4, 6), 16) / 255 || 0;
@@ -28,7 +28,7 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
   const defaultPath = path.join(process.cwd(), 'public', 'templates', 'default_template.pdf');
 
   let fullPath = defaultPath;
-  if (templateConfig.pdfPath) {
+  if (templateConfig && templateConfig.pdfPath) {
     fullPath = path.isAbsolute(templateConfig.pdfPath)
       ? templateConfig.pdfPath
       : path.join(process.cwd(), templateConfig.pdfPath);
@@ -47,7 +47,7 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
   const pages = pdfDoc.getPages();
   const page = pages[0];
 
-  // 3. Embed Standard Fonts
+  // 3. Embed All Standard PDF Fonts
   const fontHelvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontHelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontHelveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
@@ -60,36 +60,49 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
   const fontCourier = await pdfDoc.embedFont(StandardFonts.Courier);
   const fontCourierBold = await pdfDoc.embedFont(StandardFonts.CourierBold);
 
+  // Robust, case-insensitive font mapper that handles all variation strings
   const getFontByName = (fontName: string): PDFFont => {
-    switch (fontName) {
-      case 'TimesRoman':
-        return fontTimesRoman;
-      case 'TimesRomanBold':
-        return fontTimesBold;
-      case 'TimesItalic':
-        return fontTimesItalic;
-      case 'TimesBoldItalic':
+    const norm = (fontName || '').toLowerCase().replace(/[^a-z]/g, '');
+
+    // Times Roman Font Family
+    if (norm.includes('times')) {
+      if (norm.includes('bold') && (norm.includes('italic') || norm.includes('oblique'))) {
         return fontTimesBoldItalic;
-      case 'HelveticaBold':
-        return fontHelveticaBold;
-      case 'HelveticaOblique':
-        return fontHelveticaOblique;
-      case 'Courier':
-        return fontCourier;
-      case 'CourierBold':
-        return fontCourierBold;
-      case 'Helvetica':
-      default:
-        return fontHelvetica;
+      }
+      if (norm.includes('italic') || norm.includes('oblique')) {
+        return fontTimesItalic;
+      }
+      if (norm.includes('bold')) {
+        return fontTimesBold;
+      }
+      return fontTimesRoman;
     }
+
+    // Courier Monospace Font Family
+    if (norm.includes('courier') || norm.includes('mono')) {
+      if (norm.includes('bold')) {
+        return fontCourierBold;
+      }
+      return fontCourier;
+    }
+
+    // Helvetica / Arial Font Family (Default)
+    if (norm.includes('bold')) {
+      return fontHelveticaBold;
+    }
+    if (norm.includes('italic') || norm.includes('oblique')) {
+      return fontHelveticaOblique;
+    }
+
+    return fontHelvetica;
   };
 
   // Helper to draw dynamic text based on FieldConfig
   const drawFieldText = (text: string, config: FieldConfig) => {
-    if (config.enabled === false) return; // Skip drawing if disabled
+    if (!config || config.enabled === false) return; // Skip drawing if disabled
 
     const font = getFontByName(config.fontFamily);
-    const textWidth = font.widthOfTextAtSize(text, config.fontSize);
+    const textWidth = font.widthOfTextAtSize(text, config.fontSize || 24);
 
     let drawX = config.x;
     if (config.alignment === 'center') {
@@ -101,9 +114,9 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
     page.drawText(text, {
       x: drawX,
       y: config.y,
-      size: config.fontSize,
+      size: config.fontSize || 24,
       font,
-      color: parseHexColor(config.color || '#10172a'),
+      color: parseHexColor(config.color),
     });
   };
 

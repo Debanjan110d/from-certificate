@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sliders, Save, RefreshCw, Eye, Check, Layers, Type, Upload, FileUp, AlertCircle, FileCheck, Calendar, QrCode, Hash } from 'lucide-react';
 import { TemplateConfig } from '@/lib/types';
 
@@ -10,12 +10,44 @@ export default function TemplateConfigurator() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [renderingPreview, setRenderingPreview] = useState(false);
 
   // Template Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTestPreview = useCallback(async (currentConfig?: TemplateConfig) => {
+    const activeConfig = currentConfig || config;
+    if (!activeConfig) return;
+
+    setRenderingPreview(true);
+    try {
+      const res = await fetch('/api/generate-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Name: 'Debanjan Das',
+          Email: 'debanjan@example.com',
+          Course: 'Full Stack & AI Systems Engineering',
+          isPreview: true,
+          templateConfig: activeConfig,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.pdfBase64) {
+        setPreviewUrl(data.pdfBase64);
+      }
+    } catch (err) {
+      console.error('Failed to generate test preview:', err);
+    } finally {
+      setRenderingPreview(false);
+    }
+  }, [config]);
 
   useEffect(() => {
     fetchTemplate();
@@ -26,13 +58,28 @@ export default function TemplateConfigurator() {
       const res = await fetch('/api/templates');
       const data = await res.json();
       if (data.success && data.templates && data.templates.length > 0) {
-        setConfig(data.templates[0]);
+        const loadedConfig = data.templates[0];
+        setConfig(loadedConfig);
+        handleTestPreview(loadedConfig);
       }
     } catch (err) {
       console.error('Failed to fetch template config:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Debounced auto-preview renderer whenever config is modified
+  const updateConfig = (newConfig: TemplateConfig) => {
+    setConfig(newConfig);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      handleTestPreview(newConfig);
+    }, 250); // 250ms smooth debouncing for instant live preview while dragging sliders!
   };
 
   const handleSave = async () => {
@@ -51,34 +98,12 @@ export default function TemplateConfigurator() {
       if (data.success) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
-        handleTestPreview();
+        handleTestPreview(config);
       }
     } catch (err) {
       console.error('Failed to save template:', err);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleTestPreview = async () => {
-    if (!config) return;
-    try {
-      const res = await fetch('/api/generate-certificate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Name: 'Debanjan Das',
-          Email: 'debanjan@example.com',
-          Course: 'Full Stack & AI Systems Engineering',
-        }),
-      });
-
-      const data = await res.json();
-      if (data.certificateId) {
-        setPreviewUrl(`/api/download/${data.certificateId}?preview=${Date.now()}`);
-      }
-    } catch (err) {
-      console.error('Failed to generate test preview:', err);
     }
   };
 
@@ -108,7 +133,6 @@ export default function TemplateConfigurator() {
       setUploadMessage('New PDF Template uploaded and applied successfully!');
       setSelectedFile(null);
       await fetchTemplate();
-      handleTestPreview();
       setTimeout(() => setUploadMessage(null), 5000);
     } catch (err: any) {
       setUploadError(err.message || 'Error uploading file');
@@ -119,7 +143,7 @@ export default function TemplateConfigurator() {
 
   if (loading || !config) {
     return (
-      <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
+      <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2 font-sans">
         <RefreshCw className="w-5 h-5 animate-spin text-amber-400" /> Loading Template Configurations...
       </div>
     );
@@ -131,7 +155,7 @@ export default function TemplateConfigurator() {
   const qrField = config.fields.qrCode || { x: 685, y: 45, size: 70, enabled: true };
 
   const updateName = (key: string, value: any) => {
-    setConfig({
+    updateConfig({
       ...config,
       fields: {
         ...config.fields,
@@ -141,7 +165,7 @@ export default function TemplateConfigurator() {
   };
 
   const updateDate = (key: string, value: any) => {
-    setConfig({
+    updateConfig({
       ...config,
       fields: {
         ...config.fields,
@@ -151,7 +175,7 @@ export default function TemplateConfigurator() {
   };
 
   const updateCertId = (key: string, value: any) => {
-    setConfig({
+    updateConfig({
       ...config,
       fields: {
         ...config.fields,
@@ -161,7 +185,7 @@ export default function TemplateConfigurator() {
   };
 
   const updateQr = (key: string, value: any) => {
-    setConfig({
+    updateConfig({
       ...config,
       fields: {
         ...config.fields,
@@ -171,33 +195,27 @@ export default function TemplateConfigurator() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start font-sans">
       {/* Controls Column */}
       <div className="lg:col-span-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Sliders className="w-5 h-5 text-amber-400" />
-              Template PDF & Field Designer
+              Real-Time Template & Field Designer
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Upload custom background PDF templates and toggle/calibrate text positioning & fonts.
+              Move sliders or change fonts — the PDF preview on the right auto-refreshes in real time!
             </p>
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleTestPreview}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-colors"
-            >
-              <Eye className="w-4 h-4 text-amber-400" /> Test Render
-            </button>
-            <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg shadow-md transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
             >
-              {saveSuccess ? <Check className="w-4 h-4 text-emerald-950" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Config'}
+              {saveSuccess ? <Check className="w-4 h-4 text-slate-950 font-bold" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving...' : saveSuccess ? 'Saved Config!' : 'Save Config'}
             </button>
           </div>
         </div>
@@ -260,7 +278,7 @@ export default function TemplateConfigurator() {
         {/* Student Name Font & Coordinates Box */}
         <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-5 shadow-xl">
           <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-            <Type className="w-4 h-4" /> Student Name Font & Styling
+            <Type className="w-4 h-4" /> Student Name Font & Positioning
           </h3>
 
           <div className="space-y-1.5">
@@ -515,26 +533,33 @@ export default function TemplateConfigurator() {
         </div>
       </div>
 
-      {/* Preview Column */}
-      <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3">
+      {/* Live Preview Column */}
+      <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl space-y-3 sticky top-24">
         <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-          <span className="font-semibold text-slate-300">Live Coordinate Render Preview</span>
+          <span className="font-semibold text-slate-300 flex items-center gap-2">
+            <Eye className="w-4 h-4 text-amber-400" /> Real-Time Live Render Preview
+            {renderingPreview && (
+              <span className="text-[10px] text-amber-400 animate-pulse font-mono font-bold">
+                (Rendering Live...)
+              </span>
+            )}
+          </span>
           <button
-            onClick={handleTestPreview}
+            onClick={() => handleTestPreview(config)}
             className="text-amber-400 hover:underline text-xs flex items-center gap-1"
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh Preview
+            <RefreshCw className={`w-3.5 h-3.5 ${renderingPreview ? 'animate-spin' : ''}`} /> Force Refresh
           </button>
         </div>
 
         {previewUrl ? (
-          <div className="w-full h-[540px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
-            <iframe src={previewUrl} className="w-full h-full border-none" title="Live Config Preview" />
+          <div className="w-full h-[560px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+            <iframe src={previewUrl} className="w-full h-full border-none" title="Real-Time Config Preview" />
           </div>
         ) : (
-          <div className="h-[540px] bg-slate-950/60 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 text-center text-slate-500 space-y-3">
+          <div className="h-[560px] bg-slate-950/60 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 text-center text-slate-500 space-y-3">
             <Eye className="w-10 h-10 text-slate-600" />
-            <p className="text-xs">Click "Test Render" above to preview how your font & coordinate settings look on the PDF template.</p>
+            <p className="text-xs">Adjust sliders or fonts to start real-time live preview.</p>
           </div>
         )}
       </div>

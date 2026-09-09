@@ -14,21 +14,24 @@ export async function POST(req: NextRequest) {
     // 2. Generate unique Certificate ID
     const certificateId = await generateNextCertificateIdAsync();
 
-    // 3. Save certificate record (Persisted to Cloud KV for Vercel 24/7 access!)
-    const certRecord = {
-      id: certificateId,
-      name: formData.name,
-      email: formData.email,
-      course: formData.course || 'Certificate of Completion',
-      issueDate: formData.issueDate || new Date().toLocaleDateString(),
-      templateId: 'default',
-      extraFields: formData.extraFields,
-      createdAt: new Date().toISOString(),
-    };
-    await saveCertificateAsync(certRecord);
+    // 3. Save certificate record unless it's a transient designer preview
+    const isPreviewOnly = body.isPreview === true;
+    if (!isPreviewOnly) {
+      const certRecord = {
+        id: certificateId,
+        name: formData.name,
+        email: formData.email,
+        course: formData.course || 'Certificate of Completion',
+        issueDate: formData.issueDate || new Date().toLocaleDateString(),
+        templateId: 'default',
+        extraFields: formData.extraFields,
+        createdAt: new Date().toISOString(),
+      };
+      await saveCertificateAsync(certRecord);
+    }
 
-    // 4. Retrieve template configuration
-    const templateConfig = getTemplateById('default');
+    // 4. Retrieve template configuration (Supports live draft config from Designer UI!)
+    const templateConfig = body.templateConfig || getTemplateById('default');
 
     // 5. Calculate base URL for verification link & QR code
     const host = req.headers.get('host') || 'from-certificate.vercel.app';
@@ -38,8 +41,8 @@ export async function POST(req: NextRequest) {
     // 6. Generate PDF Certificate Buffer
     const pdfBuffer = await generateCertificatePdf({
       name: formData.name,
-      certificateId,
-      issueDate: certRecord.issueDate,
+      certificateId: isPreviewOnly ? 'CERT-PREVIEW-001' : certificateId,
+      issueDate: formData.issueDate || new Date().toLocaleDateString(),
       templateConfig,
       verifyBaseUrl,
     });
@@ -61,17 +64,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Return Base64 PDF string for instant real-time UI rendering
+    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+
     // Default JSON Response for Webhooks & Google Apps Script
     return NextResponse.json({
       success: true,
-      message: 'Certificate successfully generated and persisted',
-      certificateId,
+      message: 'Certificate successfully generated',
+      certificateId: isPreviewOnly ? 'CERT-PREVIEW-001' : certificateId,
       student: {
         name: formData.name,
         email: formData.email,
       },
-      issueDate: certRecord.issueDate,
-      course: certRecord.course,
+      issueDate: formData.issueDate,
+      course: formData.course,
+      pdfBase64: `data:application/pdf;base64,${pdfBase64}`,
       downloadUrl: `${verifyBaseUrl}/api/download/${certificateId}`,
       verifyUrl: `${verifyBaseUrl}/verify/${certificateId}`,
       extraFieldsReceived: Object.keys(formData.extraFields),
