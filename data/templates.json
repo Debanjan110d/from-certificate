@@ -1,0 +1,41 @@
+[
+  {
+    "id": "default",
+    "name": "Classic Achievement Certificate",
+    "pdfPath": "public/templates/default_template.pdf",
+    "width": 841.89,
+    "height": 595.28,
+    "fields": {
+      "name": {
+        "x": 462,
+        "y": 325,
+        "fontSize": 34,
+        "fontFamily": "TimesRomanBold",
+        "color": "#10172a",
+        "alignment": "center"
+      },
+      "date": {
+        "x": 170,
+        "y": 550,
+        "fontSize": 11,
+        "fontFamily": "Helvetica",
+        "color": "#334155",
+        "alignment": "center"
+      },
+      "certificateId": {
+        "x": 770,
+        "y": 565,
+        "fontSize": 9,
+        "fontFamily": "Courier",
+        "color": "#64748b",
+        "alignment": "right"
+      },
+      "qrCode": {
+        "x": 685,
+        "y": 500,
+        "size": 70,
+        "enabled": true
+      }
+    }
+  }
+]
