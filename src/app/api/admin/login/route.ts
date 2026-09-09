@@ -12,15 +12,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = NextResponse.json({ success: true, message: 'Authenticated successfully' });
-    
-    // Set admin session cookie valid for 7 days
-    response.cookies.set('admin_session', 'authenticated_admin_token_2026', {
+    const response = NextResponse.json({
+      success: true,
+      message: 'Authenticated successfully. Session valid for 30 minutes.',
+      expiresInMinutes: 30,
+    });
+
+    // Admin Session Expiry: 30 minutes (1800 seconds)
+    const token = `admin_auth_${Date.now()}`;
+
+    response.cookies.set('admin_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 30, // 30 minutes limit
     });
 
     return response;

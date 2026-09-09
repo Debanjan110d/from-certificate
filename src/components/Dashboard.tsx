@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Award, Send, Code, Sliders, LogOut, ShieldCheck, RefreshCw, UserCheck } from 'lucide-react';
+import { Award, Send, Code, Sliders, LogOut, ShieldCheck, RefreshCw, UserCheck, Clock } from 'lucide-react';
 import FormSimulator from './FormSimulator';
 import AppsScriptGenerator from './AppsScriptGenerator';
 import TemplateConfigurator from './TemplateConfigurator';
@@ -14,17 +14,37 @@ interface DashboardProps {
 
 export default function Dashboard({ onSwitchToStudent }: DashboardProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'simulator' | 'script' | 'configurator' | 'list'>('simulator');
 
   useEffect(() => {
     checkAuth();
+    const interval = setInterval(checkAuth, 10000); // Check auth every 10 seconds
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (remainingSeconds === null || remainingSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          setIsAuthenticated(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [remainingSeconds]);
 
   const checkAuth = async () => {
     try {
       const res = await fetch('/api/admin/check-auth');
       const data = await res.json();
       setIsAuthenticated(data.authenticated);
+      if (data.authenticated && data.remainingSeconds) {
+        setRemainingSeconds(data.remainingSeconds);
+      }
     } catch (err) {
       console.error('Failed to check auth status:', err);
       setIsAuthenticated(false);
@@ -42,11 +62,17 @@ export default function Dashboard({ onSwitchToStudent }: DashboardProps) {
     }
   };
 
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  };
+
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-400 font-mono text-sm">
-          <RefreshCw className="w-5 h-5 animate-spin text-amber-400" /> Verifying Admin Access...
+          <RefreshCw className="w-5 h-5 animate-spin text-amber-400" /> Verifying Admin Session Security...
         </div>
       </div>
     );
@@ -81,6 +107,15 @@ export default function Dashboard({ onSwitchToStudent }: DashboardProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {remainingSeconds !== null && (
+              <div
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold rounded-xl"
+                title="Admin Session Timeout"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-400" /> Session: {formatTimer(remainingSeconds)}
+              </div>
+            )}
+
             {onSwitchToStudent && (
               <button
                 onClick={onSwitchToStudent}
