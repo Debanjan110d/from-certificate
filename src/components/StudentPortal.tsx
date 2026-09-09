@@ -57,12 +57,12 @@ export default function StudentPortal({ onOpenAdminLogin }: StudentPortalProps) 
       <header className="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-xl relative z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
-              <Award className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-500/40 shadow-lg shadow-amber-500/10 flex items-center justify-center bg-slate-900">
+              <img src="/logo.png" alt="CertiVerify Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Official Student Portal
+                CertiVerify Portal
               </span>
               <h1 className="text-base font-bold text-white tracking-tight">Student Certificate Retrieval</h1>
             </div>
@@ -103,10 +103,10 @@ export default function StudentPortal({ onOpenAdminLogin }: StudentPortalProps) 
                 <Mail className="w-5 h-5 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
-                  placeholder="e.g. debanjan@example.com"
+                  placeholder="Enter your registered email address here to get your certificate..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-32 py-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-mono tracking-wide"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-32 py-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono tracking-wide"
                   required
                 />
                 <button
