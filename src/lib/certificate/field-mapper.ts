@@ -22,54 +22,63 @@ export function extractFormData(payload: FormSubmissionPayload): ExtractedFormDa
     });
   }
 
-  // 1. Find Name
-  const nameEntry = normalizedEntries.find(e => 
-    e.normKey === 'name' || 
-    e.normKey === 'studentname' || 
-    e.normKey === 'fullname' || 
-    e.normKey === 'candidate' ||
-    e.normKey.includes('name')
+  // 1. Find Name (matches Name, Student Name, Full Name)
+  const nameEntry =
+    normalizedEntries.find((e) => e.normKey === 'name' || e.normKey === 'fullname' || e.normKey === 'studentname') ||
+    normalizedEntries.find((e) => e.normKey.includes('name'));
+
+  // 2. Find Email - Priority Order:
+  //    a) Exact form field named "Email" or "Student Email"
+  //    b) Google Form automatic column "Email Address"
+  //    c) Any key containing "email"
+  const exactEmailEntry = normalizedEntries.find(
+    (e) => e.normKey === 'email' || e.normKey === 'studentemail'
   );
-  
-  // 2. Find Email
-  const emailEntry = normalizedEntries.find(e => 
-    e.normKey === 'email' || 
-    e.normKey === 'emailaddress' || 
-    e.normKey === 'studentemail' ||
-    e.normKey.includes('email')
+  const colEmailAddressEntry = normalizedEntries.find(
+    (e) => e.normKey === 'emailaddress'
   );
+  const fallbackEmailEntry = normalizedEntries.find((e) => e.normKey.includes('email'));
+
+  const emailEntry = exactEmailEntry || colEmailAddressEntry || fallbackEmailEntry;
 
   // 3. Find Course (Optional)
-  const courseEntry = normalizedEntries.find(e => 
-    e.normKey === 'course' || 
-    e.normKey === 'program' || 
-    e.normKey === 'event' || 
-    e.normKey === 'department'
+  const courseEntry = normalizedEntries.find(
+    (e) =>
+      e.normKey === 'course' ||
+      e.normKey === 'program' ||
+      e.normKey === 'event' ||
+      e.normKey === 'department'
   );
 
   // 4. Find Date (Optional)
-  const dateEntry = normalizedEntries.find(e => 
-    e.normKey === 'date' || 
-    e.normKey === 'issuedate' || 
-    e.normKey === 'timestamp' || 
-    e.normKey === 'dateofissue'
+  const dateEntry = normalizedEntries.find(
+    (e) =>
+      e.normKey === 'date' ||
+      e.normKey === 'issuedate' ||
+      e.normKey === 'timestamp' ||
+      e.normKey === 'dateofissue'
   );
 
   const name = nameEntry ? String(nameEntry.value).trim() : '';
-  const email = emailEntry ? String(emailEntry.value).trim() : '';
 
-  // Extract extra fields (all fields except the ones mapped to name/email/course/date)
-  const usedKeys = new Set([
-    nameEntry?.originalKey,
-    emailEntry?.originalKey,
-    courseEntry?.originalKey,
-    dateEntry?.originalKey,
-  ].filter(Boolean));
+  // Clean email value (fix common typos like .comy -> .com)
+  let rawEmail = emailEntry ? String(emailEntry.value).trim() : '';
+  rawEmail = rawEmail.replace(/\.com[a-z]+$/i, '.com'); // fix .comy, .coms -> .com
 
   const extraFields: Record<string, string | number | boolean> = {};
+
+  // Store all other entries in extraFields, including secondary emails
   for (const entry of normalizedEntries) {
-    if (!usedKeys.has(entry.originalKey)) {
-      extraFields[entry.originalKey] = entry.value;
+    if (
+      entry.originalKey !== nameEntry?.originalKey &&
+      entry.originalKey !== courseEntry?.originalKey &&
+      entry.originalKey !== dateEntry?.originalKey
+    ) {
+      let cleanVal = entry.value;
+      if (typeof cleanVal === 'string' && cleanVal.includes('@')) {
+        cleanVal = cleanVal.replace(/\.com[a-z]+$/i, '.com');
+      }
+      extraFields[entry.originalKey] = cleanVal;
     }
   }
 
@@ -78,13 +87,8 @@ export function extractFormData(payload: FormSubmissionPayload): ExtractedFormDa
     throw new Error('Validation failed: Required field "Name" is missing or empty.');
   }
 
-  if (!email) {
+  if (!rawEmail) {
     throw new Error('Validation failed: Required field "Email" is missing or empty.');
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw new Error(`Validation failed: Invalid email format "${email}".`);
   }
 
   const todayStr = new Date().toLocaleDateString('en-US', {
@@ -95,7 +99,7 @@ export function extractFormData(payload: FormSubmissionPayload): ExtractedFormDa
 
   return {
     name,
-    email,
+    email: rawEmail,
     course: courseEntry ? String(courseEntry.value).trim() : 'Certificate of Completion',
     issueDate: dateEntry ? String(dateEntry.value).trim() : todayStr,
     extraFields,

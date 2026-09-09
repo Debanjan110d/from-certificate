@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllCertificates } from '@/lib/certificate/cert-store';
+import { getAllCertificatesAsync } from '@/lib/certificate/cert-store';
 
 // Simple in-memory rate limiter for student email lookup
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const MAX_LOOKUP_ATTEMPTS = 10;
+const MAX_LOOKUP_ATTEMPTS = 20;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function isRateLimited(ip: string): boolean {
@@ -51,27 +51,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid email address format.' },
-        { status: 400 }
-      );
-    }
+    // Clean up input email (strip spaces, lowercase, fix .comy -> .com)
+    let cleanEmail = email.trim().toLowerCase();
+    cleanEmail = cleanEmail.replace(/\.com[a-z]+$/i, '.com');
 
-    const allCerts = getAllCertificates();
+    // 2. Fetch all certificates from Cloud KV / persistent store
+    const allCerts = await getAllCertificatesAsync();
 
-    // 2. Find matching student certificates
-    const studentCerts = allCerts.filter(
-      (c) => c.email.trim().toLowerCase() === cleanEmail
-    );
+    // 3. Robust multi-field email matching:
+    // Checks c.email AND any secondary email fields in c.extraFields
+    const studentCerts = allCerts.filter((c) => {
+      const primaryEmail = (c.email || '').trim().toLowerCase().replace(/\.com[a-z]+$/i, '.com');
+      if (primaryEmail === cleanEmail) return true;
+
+      // Check extraFields for secondary emails (e.g. Email address vs Email)
+      if (c.extraFields && typeof c.extraFields === 'object') {
+        for (const [key, val] of Object.entries(c.extraFields)) {
+          if (typeof val === 'string' && val.includes('@')) {
+            const extraEmail = val.trim().toLowerCase().replace(/\.com[a-z]+$/i, '.com');
+            if (extraEmail === cleanEmail) return true;
+          }
+        }
+      }
+
+      return false;
+    });
 
     if (studentCerts.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: `No certificate found for email "${cleanEmail}". Please check your email spelling or ensure you submitted the Google Form.`,
+          error: `No certificate found for email "${email.trim()}". Please check your email spelling or ensure you submitted the Google Form.`,
         },
         { status: 404 }
       );
@@ -81,7 +91,7 @@ export async function POST(req: NextRequest) {
     const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const baseUrl = `${protocol}://${host}`;
 
-    // 3. Return sanitized student certificate payload
+    // 4. Return sanitized student certificate payload
     const sanitizedCertificates = studentCerts.map((cert) => ({
       id: cert.id,
       name: cert.name,
@@ -98,6 +108,7 @@ export async function POST(req: NextRequest) {
       certificates: sanitizedCertificates,
     });
   } catch (err: any) {
+    console.error('Error claiming certificate:', err);
     return NextResponse.json(
       { success: false, error: err.message || 'Failed to retrieve certificate' },
       { status: 500 }

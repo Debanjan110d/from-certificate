@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCertificateById } from '@/lib/certificate/cert-store';
+import { getCertificateByIdAsync } from '@/lib/certificate/cert-store';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const certRecord = getCertificateById(id);
+  const certRecord = await getCertificateByIdAsync(id);
 
   if (!certRecord) {
     return NextResponse.json(
@@ -21,8 +21,8 @@ export async function GET(
 
   // Mask email for privacy (e.g. d***n@example.com)
   const maskEmail = (email: string) => {
+    if (!email || !email.includes('@')) return email;
     const [user, domain] = email.split('@');
-    if (!domain) return email;
     if (user.length <= 2) return `${user[0]}*@${domain}`;
     return `${user[0]}${'*'.repeat(user.length - 2)}${user[user.length - 1]}@${domain}`;
   };

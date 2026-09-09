@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ShieldAlert, Download, Calendar, Mail, Award, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
-import { getCertificateById } from '@/lib/certificate/cert-store';
+import { ShieldCheck, ShieldAlert, Download, Calendar, Mail, Award, CheckCircle, ArrowLeft } from 'lucide-react';
+import { getCertificateByIdAsync } from '@/lib/certificate/cert-store';
 
 export const metadata = {
   title: 'Certificate Verification System',
@@ -21,7 +21,7 @@ export default async function VerifyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const certRecord = getCertificateById(id);
+  const certRecord = await getCertificateByIdAsync(id);
 
   const isValid = !!certRecord;
 
@@ -38,7 +38,7 @@ export default async function VerifyPage({
             href="/"
             className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            <ArrowLeft className="w-4 h-4" /> Back to Student Portal
           </Link>
         </div>
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractFormData } from '@/lib/certificate/field-mapper';
-import { generateNextCertificateId, saveCertificate } from '@/lib/certificate/cert-store';
+import { generateNextCertificateIdAsync, saveCertificateAsync } from '@/lib/certificate/cert-store';
 import { getTemplateById } from '@/lib/certificate/template-store';
 import { generateCertificatePdf } from '@/lib/certificate/generator';
 
@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
     const formData = extractFormData(body);
 
     // 2. Generate unique Certificate ID
-    const certificateId = generateNextCertificateId();
+    const certificateId = await generateNextCertificateIdAsync();
 
-    // 3. Save certificate record
+    // 3. Save certificate record (Persisted to Cloud KV for Vercel 24/7 access!)
     const certRecord = {
       id: certificateId,
       name: formData.name,
@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
       extraFields: formData.extraFields,
       createdAt: new Date().toISOString(),
     };
-    saveCertificate(certRecord);
+    await saveCertificateAsync(certRecord);
 
     // 4. Retrieve template configuration
     const templateConfig = getTemplateById('default');
 
-    // 5. Calculate base URL for verification link & QR code (defaults to production Vercel URL)
+    // 5. Calculate base URL for verification link & QR code
     const host = req.headers.get('host') || 'from-certificate.vercel.app';
     const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const verifyBaseUrl = `${protocol}://${host}`;
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     // Default JSON Response for Webhooks & Google Apps Script
     return NextResponse.json({
       success: true,
-      message: 'Certificate successfully generated',
+      message: 'Certificate successfully generated and persisted',
       certificateId,
       student: {
         name: formData.name,

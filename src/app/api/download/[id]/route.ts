@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCertificateById } from '@/lib/certificate/cert-store';
+import { getCertificateByIdAsync } from '@/lib/certificate/cert-store';
 import { getTemplateById } from '@/lib/certificate/template-store';
 import { generateCertificatePdf } from '@/lib/certificate/generator';
 
@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const certRecord = getCertificateById(id);
+  const certRecord = await getCertificateByIdAsync(id);
 
   if (!certRecord) {
     return NextResponse.json(
