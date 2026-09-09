@@ -77,11 +77,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const host = req.headers.get('host') || 'localhost:3000';
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers.get('host') || 'from-certificate.vercel.app';
+    const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const baseUrl = `${protocol}://${host}`;
 
-    // 3. Return sanitized student certificate payload (no sensitive PII exposed)
+    // 3. Return sanitized student certificate payload
     const sanitizedCertificates = studentCerts.map((cert) => ({
       id: cert.id,
       name: cert.name,

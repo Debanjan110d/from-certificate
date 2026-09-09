@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
     // 4. Retrieve template configuration
     const templateConfig = getTemplateById('default');
 
-    // 5. Calculate base URL for verification link & QR code
-    const host = req.headers.get('host') || 'localhost:3000';
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    // 5. Calculate base URL for verification link & QR code (defaults to production Vercel URL)
+    const host = req.headers.get('host') || 'from-certificate.vercel.app';
+    const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const verifyBaseUrl = `${protocol}://${host}`;
 
     // 6. Generate PDF Certificate Buffer

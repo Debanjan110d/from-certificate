@@ -18,8 +18,8 @@ export async function GET(
   }
 
   const templateConfig = getTemplateById(certRecord.templateId || 'default');
-  const host = req.headers.get('host') || 'localhost:3000';
-  const protocol = req.headers.get('x-forwarded-proto') || 'http';
+  const host = req.headers.get('host') || 'from-certificate.vercel.app';
+  const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
   const verifyBaseUrl = `${protocol}://${host}`;
 
   const pdfBuffer = await generateCertificatePdf({
