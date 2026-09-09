@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { isAuthorizedAdmin } from '@/lib/admin-auth';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const CERTS_FILE = path.join(DATA_DIR, 'certificates.json');
@@ -8,10 +9,9 @@ const CERTS_FILE = path.join(DATA_DIR, 'certificates.json');
 export async function POST(req: NextRequest) {
   try {
     // Verify Admin authentication cookie
-    const cookie = req.cookies.get('admin_session');
-    if (!cookie || cookie.value !== 'authenticated_admin_token_2026') {
+    if (!isAuthorizedAdmin(req)) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: Admin authentication required.' },
+        { success: false, error: 'Unauthorized: Admin authentication required or session expired.' },
         { status: 401 }
       );
     }
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
 
-    // Overwrite certificates.json with empty array
+    // Overwrite certificates.json with empty array (clean slate)
     fs.writeFileSync(CERTS_FILE, JSON.stringify([], null, 2), 'utf-8');
 
     return NextResponse.json({
