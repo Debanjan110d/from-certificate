@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sliders, Save, RefreshCw, Eye, Check, Layers, Type, Palette } from 'lucide-react';
+import { Sliders, Save, RefreshCw, Eye, Check, Layers, Type, Upload, FileUp, AlertCircle, FileCheck } from 'lucide-react';
 import { TemplateConfig } from '@/lib/types';
 
 export default function TemplateConfigurator() {
@@ -10,6 +10,12 @@ export default function TemplateConfigurator() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Template Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTemplate();
@@ -76,6 +82,41 @@ export default function TemplateConfigurator() {
     }
   };
 
+  const handleFileUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setUploading(true);
+    setUploadMessage(null);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/api/templates/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload template PDF');
+      }
+
+      setUploadMessage('New PDF Template uploaded and applied successfully!');
+      setSelectedFile(null);
+      await fetchTemplate();
+      handleTestPreview();
+      setTimeout(() => setUploadMessage(null), 5000);
+    } catch (err: any) {
+      setUploadError(err.message || 'Error uploading file');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading || !config) {
     return (
       <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
@@ -86,7 +127,6 @@ export default function TemplateConfigurator() {
 
   const nameField = config.fields.name;
   const dateField = config.fields.date || { x: 170, y: 140, fontSize: 11, fontFamily: 'Helvetica', color: '#334155', alignment: 'center' };
-  const idField = config.fields.certificateId || { x: 770, y: 565, fontSize: 9, fontFamily: 'Courier', color: '#64748b', alignment: 'right' };
   const qrField = config.fields.qrCode || { x: 685, y: 45, size: 70, enabled: true };
 
   const updateName = (key: string, value: any) => {
@@ -127,10 +167,10 @@ export default function TemplateConfigurator() {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Sliders className="w-5 h-5 text-amber-400" />
-              Template & Field Coordinate Designer
+              Template PDF & Field Designer
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Customize Name Font Style, Placement (X, Y points), Font Size, Colors, and QR Code position.
+              Upload custom background PDF templates and calibrate text positioning & fonts.
             </p>
           </div>
           <div className="flex gap-2">
@@ -149,6 +189,61 @@ export default function TemplateConfigurator() {
               {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Config'}
             </button>
           </div>
+        </div>
+
+        {/* PDF Template File Upload Box */}
+        <div className="p-5 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/30 rounded-2xl space-y-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <Upload className="w-4 h-4" /> Upload Custom Certificate Background PDF
+            </h3>
+            <span className="text-[10px] text-slate-400 font-mono">Format: .pdf</span>
+          </div>
+
+          <form onSubmit={handleFileUpload} className="space-y-3">
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-xl px-4 py-3 flex items-center gap-3 transition-colors">
+                <FileUp className="w-5 h-5 text-amber-400 shrink-0" />
+                <span className="text-xs text-slate-300 truncate">
+                  {selectedFile ? selectedFile.name : 'Choose custom PDF file (from Canva, Adobe, etc.)'}
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={!selectedFile || uploading}
+                className="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-40 shrink-0 flex items-center gap-1.5"
+              >
+                {uploading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" /> Apply PDF Template
+                  </>
+                )}
+              </button>
+            </div>
+
+            {uploadMessage && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-emerald-400" /> {uploadMessage}
+              </div>
+            )}
+
+            {uploadError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400" /> {uploadError}
+              </div>
+            )}
+          </form>
         </div>
 
         {/* Student Name Font & Coordinates Box */}
