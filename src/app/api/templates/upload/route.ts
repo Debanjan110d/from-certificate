@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { isAuthorizedAdmin } from '@/lib/admin-auth';
-import { getTemplateById, updateTemplateConfig } from '@/lib/certificate/template-store';
+import { getTemplateByIdAsync, updateTemplateConfigAsync } from '@/lib/certificate/template-store';
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     const relativePath = `public/templates/${fileName}`;
 
     // Update active template configuration
-    const currentConfig = getTemplateById('default');
+    const currentConfig = await getTemplateByIdAsync('default');
     currentConfig.pdfPath = relativePath;
-    updateTemplateConfig(currentConfig);
+    await updateTemplateConfigAsync(currentConfig);
 
     return NextResponse.json({
       success: true,

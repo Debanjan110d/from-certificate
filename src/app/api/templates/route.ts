@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTemplates, updateTemplateConfig } from '@/lib/certificate/template-store';
+import { getTemplatesAsync, updateTemplateConfigAsync } from '@/lib/certificate/template-store';
 
 export async function GET() {
-  const templates = getTemplates();
+  const templates = await getTemplatesAsync();
   return NextResponse.json({ success: true, templates });
 }
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const updated = updateTemplateConfig(body);
+    const updated = await updateTemplateConfigAsync(body);
     return NextResponse.json({ success: true, template: updated });
   } catch (err: any) {
     return NextResponse.json(

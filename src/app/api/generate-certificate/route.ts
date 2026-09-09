@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractFormData } from '@/lib/certificate/field-mapper';
 import { generateNextCertificateIdAsync, saveCertificateAsync } from '@/lib/certificate/cert-store';
-import { getTemplateById } from '@/lib/certificate/template-store';
+import { getTemplateByIdAsync } from '@/lib/certificate/template-store';
 import { generateCertificatePdf } from '@/lib/certificate/generator';
 
 export async function POST(req: NextRequest) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Retrieve template configuration (Supports live draft config from Designer UI!)
-    const templateConfig = body.templateConfig || getTemplateById('default');
+    const templateConfig = body.templateConfig || (await getTemplateByIdAsync('default'));
 
     // 5. Calculate base URL for verification link & QR code
     const host = req.headers.get('host') || 'from-certificate.vercel.app';

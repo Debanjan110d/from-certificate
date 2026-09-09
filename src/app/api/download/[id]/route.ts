@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCertificateByIdAsync } from '@/lib/certificate/cert-store';
-import { getTemplateById } from '@/lib/certificate/template-store';
+import { getTemplateByIdAsync } from '@/lib/certificate/template-store';
 import { generateCertificatePdf } from '@/lib/certificate/generator';
 
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
     );
   }
 
-  const templateConfig = getTemplateById(certRecord.templateId || 'default');
+  const templateConfig = await getTemplateByIdAsync(certRecord.templateId || 'default');
   const host = req.headers.get('host') || 'from-certificate.vercel.app';
   const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
   const verifyBaseUrl = `${protocol}://${host}`;
