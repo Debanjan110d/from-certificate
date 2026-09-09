@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ExternalLink, Code2, Layers, FileCheck, HelpCircle, AlertTriangle } from 'lucide-react';
+import { Copy, Check, ExternalLink, Code2, Layers, FileCheck, HelpCircle, AlertTriangle, RefreshCw, Zap } from 'lucide-react';
 
 export default function AppsScriptGenerator() {
   const [copied, setCopied] = useState(false);
@@ -19,33 +19,26 @@ export default function AppsScriptGenerator() {
  * Google Apps Script for Automated Student Certificate Generation
  * Production Deployment URL: ${webhookUrl}
  * 
- * INSTRUCTIONS:
- * 1. Open Google Sheets -> Extensions -> Apps Script
- * 2. Paste this code into Code.gs
- * 3. Save (Ctrl+S or Cmd+S)
- * 4. Click Clock Icon (Triggers) on the left sidebar
- * 5. Click "+ Add Trigger" (bottom right)
- *    - Function to run: onFormSubmit
- *    - Deployment: Head
- *    - Event Source: From sheet
- *    - Event Type: On form submit  <-- CRITICAL! (Do NOT choose "On open")
- * 6. Save & Authorize permissions!
+ * INCLUDES 2 FUNCTIONS:
+ * 1. onFormSubmit(e) -> Automatic real-time trigger for NEW submissions
+ * 2. syncAllPastSubmissions() -> ONE-CLICK FAILSAFE to sync all PAST submissions already in the sheet!
  */
 
 const WEBHOOK_URL = "${webhookUrl}";
 
+/**
+ * 1. REAL-TIME TRIGGER FOR NEW FORM SUBMISSIONS
+ */
 function onFormSubmit(e) {
   try {
     let payload = {};
 
-    // 1. Extract values dynamically from named column headers
     if (e && e.namedValues) {
       for (let key in e.namedValues) {
         let val = e.namedValues[key];
         payload[key] = Array.isArray(val) ? val[0] : val;
       }
     } else if (e && e.values && e.range) {
-      // Fallback: Read headers from Row 1
       let sheet = e.range.getSheet();
       let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
       let rowValues = e.values;
@@ -57,9 +50,51 @@ function onFormSubmit(e) {
       return;
     }
 
-    Logger.log("Sending payload: " + JSON.stringify(payload));
+    sendPayloadToBackend(payload);
+  } catch (err) {
+    Logger.log("Error in onFormSubmit: " + err.toString());
+  }
+}
 
-    // 2. Post payload to Vercel production backend
+/**
+ * 2. FAILSAFE BULK SYNC FOR ALL PAST EXISTING SUBMISSIONS
+ * Select "syncAllPastSubmissions" at the top of Apps Script and click "Run"
+ * to instantly sync all existing rows in your Google Sheet!
+ */
+function syncAllPastSubmissions() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  let data = sheet.getDataRange().getValues();
+
+  if (data.length <= 1) {
+    Logger.log("No existing submission rows found.");
+    return;
+  }
+
+  let headers = data[0]; // Row 1 headers
+  let totalSynced = 0;
+
+  for (let r = 1; r < data.length; r++) {
+    let row = data[r];
+    let payload = {};
+
+    for (let c = 0; c < headers.length; c++) {
+      let headerName = headers[c];
+      payload[headerName] = row[c] !== undefined ? row[c] : "";
+    }
+
+    if (sendPayloadToBackend(payload)) {
+      totalSynced++;
+    }
+  }
+
+  Logger.log("Failsafe Sync Complete: Successfully synced " + totalSynced + " past submissions!");
+}
+
+/**
+ * Helper function to POST JSON to backend
+ */
+function sendPayloadToBackend(payload) {
+  try {
     let options = {
       method: "post",
       contentType: "application/json",
@@ -68,11 +103,11 @@ function onFormSubmit(e) {
     };
 
     let response = UrlFetchApp.fetch(WEBHOOK_URL, options);
-    let responseText = response.getContentText();
-    Logger.log("Backend Response (" + response.getResponseCode() + "): " + responseText);
-
+    Logger.log("Response (" + response.getResponseCode() + "): " + response.getContentText());
+    return response.getResponseCode() === 200;
   } catch (err) {
-    Logger.log("Error in onFormSubmit: " + err.toString());
+    Logger.log("Failed to send payload: " + err.toString());
+    return false;
   }
 }
 `;
@@ -121,6 +156,22 @@ function onFormSubmit(e) {
         </div>
       </div>
 
+      {/* Failsafe Past Submissions Feature Box */}
+      <div className="p-6 bg-gradient-to-r from-blue-950/80 via-slate-900 to-slate-950 border border-blue-500/30 rounded-2xl space-y-3 shadow-xl">
+        <div className="flex items-center gap-3 text-blue-400">
+          <Zap className="w-6 h-6" />
+          <h3 className="text-base font-bold text-white uppercase tracking-wider">
+            Failsafe Feature: Sync All Past Submissions
+          </h3>
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed">
+          If students submitted your Google Form <strong className="text-white">before</strong> you connected this website, don't worry! The updated script includes <code className="text-amber-400 font-mono bg-slate-950 px-1.5 py-0.5 rounded">syncAllPastSubmissions()</code>.
+        </p>
+        <p className="text-xs text-slate-400">
+          <strong>How to run it:</strong> At the top bar of Google Apps Script, select <code className="text-emerald-400">syncAllPastSubmissions</code> from the dropdown next to Debug/Run, and click <strong className="text-white font-semibold">▶ Run</strong>. It will instantly loop through every existing row in your Google Sheet and sync them all into the database!
+        </p>
+      </div>
+
       {/* Critical Trigger Settings Alert Box */}
       <div className="p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-4">
         <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
@@ -129,7 +180,7 @@ function onFormSubmit(e) {
             Critical Trigger Setting Requirement
           </p>
           <p>
-            When configuring the trigger in Apps Script (Clock ⏰ icon &rarr; Add Trigger), make sure to set:
+            When configuring the automatic trigger in Apps Script (Clock ⏰ icon &rarr; Add Trigger), make sure to set:
           </p>
           <p className="font-mono text-white bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
             Select event type = <span className="text-emerald-400 font-bold">On form submit</span> (Do NOT choose "On open")
@@ -142,7 +193,7 @@ function onFormSubmit(e) {
         <div className="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800">
           <div className="flex items-center gap-2 text-slate-200 font-mono text-sm">
             <Code2 className="w-4 h-4 text-amber-400" />
-            <span>Production Apps Script — Code.gs</span>
+            <span>Production Apps Script — Code.gs (Real-Time + Failsafe Sync)</span>
           </div>
           <button
             onClick={copyToClipboard}
@@ -174,6 +225,9 @@ function onFormSubmit(e) {
           </li>
           <li className="leading-relaxed">
             Paste the code above into <code className="text-slate-200 bg-slate-950 px-1.5 py-0.5 rounded">Code.gs</code> and press <kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-xs text-white">Ctrl + S</kbd> to save.
+          </li>
+          <li className="leading-relaxed">
+            <strong className="text-amber-400">Failsafe for Past Submissions:</strong> At the top toolbar of Apps Script, select <code className="text-emerald-400">syncAllPastSubmissions</code> from the function dropdown and click <strong className="text-white">▶ Run</strong> to sync all existing rows!
           </li>
           <li className="leading-relaxed">
             Click the <strong className="text-white">Triggers (Clock icon)</strong> on the left sidebar &rarr; Click <strong className="text-amber-400">+ Add Trigger</strong>.
