@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ExternalLink, Code2, Layers, FileCheck, HelpCircle, ShieldCheck } from 'lucide-react';
+import { Copy, Check, ExternalLink, Code2, Layers, FileCheck, HelpCircle, AlertTriangle } from 'lucide-react';
 
 export default function AppsScriptGenerator() {
   const [copied, setCopied] = useState(false);
@@ -25,10 +25,10 @@ export default function AppsScriptGenerator() {
  * 3. Save (Ctrl+S or Cmd+S)
  * 4. Click Clock Icon (Triggers) on the left sidebar
  * 5. Click "+ Add Trigger" (bottom right)
- *    - Function: onFormSubmit
+ *    - Function to run: onFormSubmit
  *    - Deployment: Head
  *    - Event Source: From sheet
- *    - Event Type: On form submit
+ *    - Event Type: On form submit  <-- CRITICAL! (Do NOT choose "On open")
  * 6. Save & Authorize permissions!
  */
 
@@ -84,7 +84,7 @@ function onFormSubmit(e) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       {/* File Type & Column Names Explanation Panel */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-3">
@@ -118,6 +118,22 @@ function onFormSubmit(e) {
             <p><span className="text-emerald-400">Email</span> &rarr; <code className="bg-slate-950 px-1 text-slate-300">Email</code>, <code className="bg-slate-950 px-1 text-slate-300">Email Address</code>, <code className="bg-slate-950 px-1 text-slate-300">Student Email</code></p>
             <p><span className="text-blue-400">Extra Fields</span> &rarr; <code className="bg-slate-950 px-1 text-slate-300">College</code>, <code className="bg-slate-950 px-1 text-slate-300">Phone</code>, <code className="bg-slate-950 px-1 text-slate-300">Registration Number</code>, etc.</p>
           </div>
+        </div>
+      </div>
+
+      {/* Critical Trigger Settings Alert Box */}
+      <div className="p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-4">
+        <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+        <div className="space-y-1 text-xs leading-relaxed text-amber-200">
+          <p className="font-bold text-sm text-amber-300 uppercase tracking-wide">
+            Critical Trigger Setting Requirement
+          </p>
+          <p>
+            When configuring the trigger in Apps Script (Clock ⏰ icon &rarr; Add Trigger), make sure to set:
+          </p>
+          <p className="font-mono text-white bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+            Select event type = <span className="text-emerald-400 font-bold">On form submit</span> (Do NOT choose "On open")
+          </p>
         </div>
       </div>
 
