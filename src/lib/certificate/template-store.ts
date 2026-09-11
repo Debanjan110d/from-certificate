@@ -17,10 +17,10 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   fields: {
     name: {
       x: 297.5, // Center of 595 page width
-      y: 395,   // Directly under "Certificate Of Participation Presented To:"
-      fontSize: 30,
-      fontFamily: 'TimesRomanBold',
-      color: '#0f172a',
+      y: 390,   // Directly under "Certificate Of Participation Presented To:"
+      fontSize: 34,
+      fontFamily: 'TimesBoldItalic',
+      color: '#0d233a',
       alignment: 'center',
     },
     date: {
