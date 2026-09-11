@@ -25,21 +25,32 @@ export async function generateCertificatePdf(options: GeneratePdfOptions): Promi
 
   // 1. Locate and load PDF template
   let templatePdfBuffer: Buffer;
-  const defaultPath = path.join(process.cwd(), 'public', 'templates', 'default_template.pdf');
-
-  let fullPath = defaultPath;
-  if (templateConfig && templateConfig.pdfPath) {
-    fullPath = path.isAbsolute(templateConfig.pdfPath)
-      ? templateConfig.pdfPath
-      : path.join(process.cwd(), templateConfig.pdfPath);
-  }
-
-  if (fs.existsSync(fullPath)) {
-    templatePdfBuffer = fs.readFileSync(fullPath);
-  } else if (fs.existsSync(defaultPath)) {
-    templatePdfBuffer = fs.readFileSync(defaultPath);
+  
+  if (templateConfig && templateConfig.pdfBase64) {
+    templatePdfBuffer = Buffer.from(templateConfig.pdfBase64, 'base64');
   } else {
-    throw new Error(`Template PDF file could not be found.`);
+    const rootCrPath = path.join(process.cwd(), 'cr.pdf');
+    const crTemplatePath = path.join(process.cwd(), 'public', 'templates', 'cr.pdf');
+    const defaultPath = path.join(process.cwd(), 'public', 'templates', 'default_template.pdf');
+
+    let fullPath = crTemplatePath;
+    if (templateConfig && templateConfig.pdfPath) {
+      fullPath = path.isAbsolute(templateConfig.pdfPath)
+        ? templateConfig.pdfPath
+        : path.join(process.cwd(), templateConfig.pdfPath);
+    }
+
+    if (fs.existsSync(fullPath)) {
+      templatePdfBuffer = fs.readFileSync(fullPath);
+    } else if (fs.existsSync(rootCrPath)) {
+      templatePdfBuffer = fs.readFileSync(rootCrPath);
+    } else if (fs.existsSync(crTemplatePath)) {
+      templatePdfBuffer = fs.readFileSync(crTemplatePath);
+    } else if (fs.existsSync(defaultPath)) {
+      templatePdfBuffer = fs.readFileSync(defaultPath);
+    } else {
+      throw new Error(`Template PDF file could not be found.`);
+    }
   }
 
   // 2. Load Document and Page

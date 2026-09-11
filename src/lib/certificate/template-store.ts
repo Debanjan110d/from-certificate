@@ -10,39 +10,41 @@ const CLOUD_KV_URL = `https://kvdb.io/${CLOUD_KV_BUCKET}/templates`;
 
 export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   id: 'default',
-  name: 'Classic Achievement Certificate',
+  name: "Teacher's Day Participation Certificate",
   pdfPath: 'public/templates/default_template.pdf',
-  width: 841.89,
-  height: 595.28,
+  width: 595,
+  height: 842,
   fields: {
     name: {
-      x: 420.94, // Center of 841.89 page
-      y: 335,
-      fontSize: 34,
+      x: 297.5, // Center of 595 page width
+      y: 395,   // Directly under "Certificate Of Participation Presented To:"
+      fontSize: 30,
       fontFamily: 'TimesRomanBold',
-      color: '#10172a',
+      color: '#0f172a',
       alignment: 'center',
     },
     date: {
-      x: 170,
-      y: 140,
-      fontSize: 11,
+      x: 297.5,
+      y: 475,
+      fontSize: 12,
       fontFamily: 'Helvetica',
       color: '#334155',
       alignment: 'center',
+      enabled: false, // Pre-printed on template ("5th September, 2026")
     },
     certificateId: {
-      x: 770,
-      y: 565,
-      fontSize: 9,
+      x: 565,
+      y: 815,
+      fontSize: 8,
       fontFamily: 'Courier',
       color: '#64748b',
       alignment: 'right',
+      enabled: true,
     },
     qrCode: {
-      x: 685,
-      y: 45,
-      size: 70,
+      x: 505,
+      y: 20,
+      size: 65,
       enabled: true,
     },
   },

@@ -28,8 +28,9 @@ export interface TemplateConfig {
   id: string;
   name: string;
   pdfPath: string; // Relative or absolute path to template PDF file
-  width: number; // e.g. 841.89
-  height: number; // e.g. 595.28
+  pdfBase64?: string; // Optional persistent Base64 PDF string for Vercel cloud persistence
+  width: number; // e.g. 841.89 or 595
+  height: number; // e.g. 595.28 or 842
   fields: {
     name: FieldConfig;
     date?: FieldConfig;

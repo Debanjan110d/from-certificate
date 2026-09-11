@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "CERT-2026-000001",
+    "name": "Swarupa Dutta",
+    "email": "swarupa@gmail.com",
+    "course": "Certificate of Completion",
+    "issueDate": "September 11, 2026",
+    "templateId": "default",
+    "extraFields": {
+      "Email": "swarupa@gmail.com"
+    },
+    "createdAt": "2026-09-11T15:24:25.865Z"
+  }
+]

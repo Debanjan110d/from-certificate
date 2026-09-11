@@ -33,22 +33,27 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const pdfBase64 = buffer.toString('base64');
 
-    // Save to public/templates/custom_template.pdf
-    const templatesDir = path.join(process.cwd(), 'public', 'templates');
-    if (!fs.existsSync(templatesDir)) {
-      fs.mkdirSync(templatesDir, { recursive: true });
-    }
-
+    // Save to public/templates/custom_template.pdf (when filesystem permits)
     const fileName = `template_${Date.now()}.pdf`;
-    const filePath = path.join(templatesDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-
     const relativePath = `public/templates/${fileName}`;
 
-    // Update active template configuration
+    try {
+      const templatesDir = path.join(process.cwd(), 'public', 'templates');
+      if (!fs.existsSync(templatesDir)) {
+        fs.mkdirSync(templatesDir, { recursive: true });
+      }
+      const filePath = path.join(templatesDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+    } catch (err) {
+      // Ignore read-only filesystem errors on serverless Vercel
+    }
+
+    // Update active template configuration with Base64 cloud storage
     const currentConfig = await getTemplateByIdAsync('default');
     currentConfig.pdfPath = relativePath;
+    currentConfig.pdfBase64 = pdfBase64;
     await updateTemplateConfigAsync(currentConfig);
 
     return NextResponse.json({
