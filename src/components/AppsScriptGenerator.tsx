@@ -33,24 +33,30 @@ function onFormSubmit(e) {
   try {
     let payload = {};
 
-    if (e && e.namedValues) {
+    if (e && e.namedValues && Object.keys(e.namedValues).length > 0) {
       for (let key in e.namedValues) {
         let val = e.namedValues[key];
         payload[key] = Array.isArray(val) ? val[0] : val;
       }
-    } else if (e && e.values && e.range) {
-      let sheet = e.range.getSheet();
-      let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      let rowValues = e.values;
-      for (let i = 0; i < headers.length; i++) {
-        payload[headers[i]] = rowValues[i] || "";
-      }
     } else {
-      Logger.log("No submission event payload found.");
-      return;
+      // Fail-safe Fallback: Get newest submission directly from active sheet
+      let sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+      let lastRow = sheet.getLastRow();
+      let lastCol = sheet.getLastColumn();
+      if (lastRow > 1) {
+        let headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        let rowValues = sheet.getRange(lastRow, 1, 1, lastCol).getValues()[0];
+        for (let i = 0; i < headers.length; i++) {
+          payload[headers[i]] = rowValues[i] !== undefined ? rowValues[i] : "";
+        }
+      }
     }
 
-    sendPayloadToBackend(payload);
+    if (Object.keys(payload).length > 0) {
+      sendPayloadToBackend(payload);
+    } else {
+      Logger.log("No submission row payload found.");
+    }
   } catch (err) {
     Logger.log("Error in onFormSubmit: " + err.toString());
   }

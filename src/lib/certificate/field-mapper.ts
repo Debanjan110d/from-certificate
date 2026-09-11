@@ -22,15 +22,22 @@ export function extractFormData(payload: FormSubmissionPayload): ExtractedFormDa
     });
   }
 
-  // 1. Find Name (matches Name, Student Name, Full Name)
+  // 1. Find Name (matches Name, Student Name, Full Name, Participant Name, Candidate Name)
   const nameEntry =
-    normalizedEntries.find((e) => e.normKey === 'name' || e.normKey === 'fullname' || e.normKey === 'studentname') ||
-    normalizedEntries.find((e) => e.normKey.includes('name'));
+    normalizedEntries.find(
+      (e) =>
+        e.normKey === 'name' ||
+        e.normKey === 'fullname' ||
+        e.normKey === 'studentname' ||
+        e.normKey === 'participantname' ||
+        e.normKey === 'candidatename'
+    ) || normalizedEntries.find((e) => e.normKey.includes('name'));
 
   // 2. Find Email - Priority Order:
   //    a) Exact form field named "Email" or "Student Email"
   //    b) Google Form automatic column "Email Address"
   //    c) Any key containing "email"
+  //    d) Value-based fallback (any field value containing "@" and ".")
   const exactEmailEntry = normalizedEntries.find(
     (e) => e.normKey === 'email' || e.normKey === 'studentemail'
   );
@@ -38,8 +45,11 @@ export function extractFormData(payload: FormSubmissionPayload): ExtractedFormDa
     (e) => e.normKey === 'emailaddress'
   );
   const fallbackEmailEntry = normalizedEntries.find((e) => e.normKey.includes('email'));
+  const valueEmailEntry = normalizedEntries.find(
+    (e) => typeof e.value === 'string' && e.value.includes('@') && e.value.includes('.')
+  );
 
-  const emailEntry = exactEmailEntry || colEmailAddressEntry || fallbackEmailEntry;
+  const emailEntry = exactEmailEntry || colEmailAddressEntry || fallbackEmailEntry || valueEmailEntry;
 
   // 3. Find Course (Optional)
   const courseEntry = normalizedEntries.find(
