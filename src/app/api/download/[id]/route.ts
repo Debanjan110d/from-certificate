@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCertificateByIdAsync } from '@/lib/certificate/cert-store';
+import { getCertificateByIdAsync, saveCertificateAsync } from '@/lib/certificate/cert-store';
 import { getTemplateByIdAsync } from '@/lib/certificate/template-store';
 import { generateCertificatePdf } from '@/lib/certificate/generator';
 
@@ -16,6 +16,11 @@ export async function GET(
       { status: 404 }
     );
   }
+
+  // Track download status (1 = Downloaded / Yes, 0 = Not Downloaded / No)
+  certRecord.downloaded = 1;
+  certRecord.downloadCount = (certRecord.downloadCount || 0) + 1;
+  await saveCertificateAsync(certRecord);
 
   const templateConfig = await getTemplateByIdAsync(certRecord.templateId || 'default');
   const host = req.headers.get('host') || 'from-certificate.vercel.app';

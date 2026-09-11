@@ -57,6 +57,8 @@ export interface CertificateRecord {
   templateId: string;
   extraFields: Record<string, string | number | boolean>;
   createdAt: string;
+  downloaded?: number; // 1 = Yes (Downloaded), 0 = No (Not Downloaded)
+  downloadCount?: number; // Total number of times downloaded
 }
 
 export interface FormSubmissionPayload {

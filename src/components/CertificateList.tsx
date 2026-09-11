@@ -172,18 +172,39 @@ export default function CertificateList() {
                 <th className="py-3 px-4">Email</th>
                 <th className="py-3 px-4">Course</th>
                 <th className="py-3 px-4">Issue Date</th>
+                <th className="py-3 px-4 text-center">Downloaded</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {filteredCerts.map((cert) => (
-                <tr key={cert.id} className="hover:bg-slate-950/40 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-amber-400">{cert.id}</td>
-                  <td className="py-3 px-4 font-semibold text-slate-100">{cert.name}</td>
-                  <td className="py-3 px-4 text-slate-300 font-mono">{cert.email}</td>
-                  <td className="py-3 px-4 text-slate-300">{cert.course}</td>
-                  <td className="py-3 px-4 text-slate-400">{cert.issueDate}</td>
-                  <td className="py-3 px-4 text-right space-x-2">
+              {filteredCerts.map((cert) => {
+                const isDownloaded = cert.downloaded === 1 || (cert.downloadCount && cert.downloadCount > 0);
+                return (
+                  <tr key={cert.id} className="hover:bg-slate-950/40 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-amber-400">{cert.id}</td>
+                    <td className="py-3 px-4 font-semibold text-slate-100">{cert.name}</td>
+                    <td className="py-3 px-4 text-slate-300 font-mono">{cert.email}</td>
+                    <td className="py-3 px-4 text-slate-300">{cert.course}</td>
+                    <td className="py-3 px-4 text-slate-400">{cert.issueDate}</td>
+                    <td className="py-3 px-4 text-center">
+                      {isDownloaded ? (
+                        <span
+                          className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono font-bold rounded-full text-xs inline-flex items-center gap-1 shadow-sm"
+                          title={`Downloaded ${cert.downloadCount || 1} time(s)`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          1 (Yes)
+                        </span>
+                      ) : (
+                        <span
+                          className="px-2.5 py-1 bg-slate-800/80 border border-slate-700/60 text-slate-400 font-mono font-bold rounded-full text-xs inline-flex items-center gap-1"
+                          title="Not downloaded yet"
+                        >
+                          0 (No)
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right space-x-2">
                     <a
                       href={`/api/download/${cert.id}`}
                       target="_blank"
@@ -204,7 +225,8 @@ export default function CertificateList() {
                     </a>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>

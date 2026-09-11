@@ -75,8 +75,12 @@ export async function getTemplatesAsync(): Promise<TemplateConfig[]> {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        templateCache = data;
-        return data;
+        const merged = data.map((t) => ({
+          ...DEFAULT_TEMPLATE_CONFIG,
+          ...t,
+        }));
+        templateCache = merged;
+        return merged;
       }
     }
   } catch (err) {
@@ -142,18 +146,19 @@ export function getTemplateById(id: string): TemplateConfig {
 export async function saveTemplatesAsync(templates: TemplateConfig[]): Promise<void> {
   templateCache = templates;
 
-  // 1. Sync to Cloud KV Store
+  // 1. Sync layout coordinates & typography to Cloud KV Store (lightweight payload < 1KB)
   try {
+    const lightweightTemplates = templates.map(({ pdfBase64, ...rest }) => rest);
     await fetch(CLOUD_KV_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(templates),
+      body: JSON.stringify(lightweightTemplates),
     });
   } catch (err) {
     console.error('Failed to persist templates to Cloud KV:', err);
   }
 
-  // 2. Sync to local file
+  // 2. Sync to local file when filesystem permits
   try {
     ensureDataDirExists();
     fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(templates, null, 2), 'utf-8');
