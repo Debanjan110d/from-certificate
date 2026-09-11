@@ -16,12 +16,13 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
   height: 842,
   fields: {
     name: {
-      x: 297.5, // Center of 595 page width
-      y: 390,   // Directly under "Certificate Of Participation Presented To:"
-      fontSize: 34,
+      x: 381,
+      y: 355,
+      fontSize: 36,
       fontFamily: 'TimesBoldItalic',
-      color: '#0d233a',
-      alignment: 'center',
+      color: '#10172a',
+      alignment: 'right',
+      enabled: true,
     },
     date: {
       x: 297.5,
@@ -30,7 +31,7 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
       fontFamily: 'Helvetica',
       color: '#334155',
       alignment: 'center',
-      enabled: false, // Pre-printed on template ("5th September, 2026")
+      enabled: false,
     },
     certificateId: {
       x: 565,
@@ -39,13 +40,13 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
       fontFamily: 'Courier',
       color: '#64748b',
       alignment: 'right',
-      enabled: true,
+      enabled: false,
     },
     qrCode: {
       x: 505,
       y: 20,
       size: 65,
-      enabled: true,
+      enabled: false,
     },
   },
 };

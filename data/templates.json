@@ -1,40 +1,43 @@
 [
   {
     "id": "default",
-    "name": "Classic Achievement Certificate",
+    "name": "Teacher's Day Participation Certificate",
     "pdfPath": "public/templates/default_template.pdf",
-    "width": 841.89,
-    "height": 595.28,
+    "width": 595,
+    "height": 842,
     "fields": {
       "name": {
-        "x": 462,
-        "y": 325,
+        "x": 381,
+        "y": 355,
         "fontSize": 36,
-        "fontFamily": "TimesRomanBold",
+        "fontFamily": "TimesBoldItalic",
         "color": "#10172a",
-        "alignment": "center"
+        "alignment": "right",
+        "enabled": true
       },
       "date": {
-        "x": 170,
-        "y": 550,
-        "fontSize": 11,
+        "x": 297.5,
+        "y": 475,
+        "fontSize": 12,
         "fontFamily": "Helvetica",
         "color": "#334155",
-        "alignment": "center"
+        "alignment": "center",
+        "enabled": false
       },
       "certificateId": {
-        "x": 770,
-        "y": 565,
-        "fontSize": 9,
+        "x": 565,
+        "y": 815,
+        "fontSize": 8,
         "fontFamily": "Courier",
         "color": "#64748b",
-        "alignment": "right"
+        "alignment": "right",
+        "enabled": false
       },
       "qrCode": {
-        "x": 685,
-        "y": 500,
-        "size": 70,
-        "enabled": true
+        "x": 505,
+        "y": 20,
+        "size": 65,
+        "enabled": false
       }
     }
   }
